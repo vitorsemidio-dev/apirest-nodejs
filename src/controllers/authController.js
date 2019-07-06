@@ -38,4 +38,29 @@ router.post('/authenticate', async (req, res) => {
     res.send({ user });
 });
 
+router.post('/mock', async(req, res) => {
+    const users = [];
+    for (let i = 0; i < 10; i++) {
+        const name = 'usuario' + i;
+        const email = `teste${i}@mail.com`;
+        const password = 'abcde' + i;
+        const body = {name, email, password};
+        // const user = await User.create(body)
+        // users.push(user);
+    }
+
+    return res.send(users);
+})
+
+router.delete('/clean', async (req, res) => {
+    const all_data = await User.find();
+    const list_id = all_data.map((data) => data._id);
+    list_id.map( async (id) =>  {
+        await User.findByIdAndRemove(id);
+        return
+    });
+
+    return res.send({ ok: true });
+})
+
 module.exports = app => app.use('/auth', router);
