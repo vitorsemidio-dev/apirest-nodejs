@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const mailer = require('../../modules/mailer');
 
 const authConfig = require('../../config/auth');
 
@@ -63,8 +64,8 @@ router.post('/mock', async(req, res) => {
         const email = `teste${i}@mail.com`;
         const password = 'abcde' + i;
         const body = {name, email, password};
-        // const user = await User.create(body)
-        // users.push(user);
+        const user = await User.create(body)
+        users.push(user);
     }
 
     return res.send(users);
@@ -101,7 +102,21 @@ router.post('/forgot_password', async (req, res) => {
                 passwordResetToken: token,
                 passwordResetExpires: now,
             }
-        })
+        });
+
+        var mailOptions = {
+            from: '"Node API ?" <forgot-password@blurdybloop.com>',
+            to: email,
+            subject: 'Forgot Password ✔',
+            text: `Utilize o ${token} para recuperar a sua senha`,
+            html: `<p>Utilize o token <b>${token}</b> para recuperar a sua senha</p>`
+        };
+        mailer.sendMail(mailOptions, (err, info) => {
+            if (err) {
+                return res.status(400).send({ error: 'Cannot send forgot password' });
+            }
+            return res.send();
+        });
 
 
         return res.send({ token, now });
