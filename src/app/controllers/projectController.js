@@ -22,6 +22,7 @@ router.get('/:projectId', async(req, res) => {
     const { projectId } = req.params;
     try {
         const project = await Project.findById(projectId).populate(['user', 'tasks']);
+        // TODO - project not found
 
         return res.send({ project, projectId });
     } catch (err) {
@@ -30,8 +31,31 @@ router.get('/:projectId', async(req, res) => {
 });
 
 router.put('/:projectId', async(req, res) => {
-    res.send({ ok: true, user: req.userId, put: 'put' });
-    // TODO - Implementar
+    const { body, params } = req;
+    const { projectId } = params;
+    const { title, description, tasks } = body;
+    try {
+        const project = await Project.findByIdAndUpdate( projectId, {
+            title,
+            description,
+        }, { new: true });
+
+        project.tasks = [];
+        await Task.remove({ project: project._id });
+
+        await Promise.all(tasks.map(async task => {
+            const projectTask = new Task({ ...task, project: project._id })
+
+            await projectTask.save();
+            project.tasks.push(projectTask);
+        }));
+
+        await project.save();
+
+        return res.send({ project });
+    } catch (err) {
+        return res.status(400).send({ error: 'Error on updating  project', err });
+    }
 });
 
 router.post('/', async(req, res) => {
