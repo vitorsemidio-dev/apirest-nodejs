@@ -9,23 +9,53 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.get('/', async(req, res) => {
-    res.send({ ok: true, user: req.userId, get: 'all' });
+    try {
+        const projects = await Project.find().populate('user');
+
+        return res.send({ projects });
+    } catch (err) {
+        res.status(400).send({ error: 'Error on getting projects', err });
+    }
 });
 
 router.get('/:projectId', async(req, res) => {
-    res.send({ ok: true, user: req.userId, get: 'id' });
+    const { projectId } = req.params;
+    try {
+        const project = await Project.findById(projectId);
+
+        return res.send({ project, projectId });
+    } catch (err) {
+        res.status(400).send({ error: 'Error on getting project', err });
+    }
 });
 
 router.put('/:projectId', async(req, res) => {
     res.send({ ok: true, user: req.userId, put: 'put' });
+    // TODO - Implementar
 });
 
 router.post('/', async(req, res) => {
-    res.send({ ok: true, user: req.userId , post: 'post' });
+    const { body, userId } = req;
+    try {
+        const project = await Project.create({ ...body, user: userId});
+
+        //TODO - Aceitar array e salvar as tarefas com projeto
+
+        return res.send({ project });
+    } catch (err) {
+        return res.status(400).send({ error: 'Error on creating new project', err });
+    }
 });
 
 router.delete('/:projectId', async(req, res) => {
-    res.send({ ok: true, user: req.userId, delete: 'delete' });
+    const { projectId } = req.params;
+    try {
+        await Project.findByIdAndRemove(projectId);
+
+        return res.send();
+    } catch (err) {
+        res.status(400).send({ error: 'Error on removing project', err });
+    }
 });
 
 
