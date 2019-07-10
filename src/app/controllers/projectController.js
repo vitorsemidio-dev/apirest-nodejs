@@ -10,7 +10,7 @@ router.use(authMiddleware);
 
 router.get('/', async(req, res) => {
     try {
-        const projects = await Project.find().populate('user');
+        const projects = await Project.find().populate(['user', 'tasks']);
 
         return res.send({ projects });
     } catch (err) {
@@ -21,7 +21,7 @@ router.get('/', async(req, res) => {
 router.get('/:projectId', async(req, res) => {
     const { projectId } = req.params;
     try {
-        const project = await Project.findById(projectId);
+        const project = await Project.findById(projectId).populate(['user', 'tasks']);
 
         return res.send({ project, projectId });
     } catch (err) {
@@ -36,10 +36,18 @@ router.put('/:projectId', async(req, res) => {
 
 router.post('/', async(req, res) => {
     const { body, userId } = req;
+    const { title, description, tasks } = body;
     try {
-        const project = await Project.create({ ...body, user: userId});
+        const project = await Project.create({ title, description, user: userId});
 
-        //TODO - Aceitar array e salvar as tarefas com projeto
+        await Promise.all(tasks.map(async task => {
+            const projectTask = new Task({ ...task, project: project._id })
+
+            await projectTask.save();
+            project.tasks.push(projectTask);
+        }));
+
+        await project.save();
 
         return res.send({ project });
     } catch (err) {
